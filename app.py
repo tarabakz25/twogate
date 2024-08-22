@@ -25,8 +25,6 @@ app = Flask(__name__)
 configuration = Configuration(access_token=config.CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(config.CHANNEL_SECRET)
 
-
-
 @app.route('/callback', methods=['POST'])
 def callback():
     signature = request.headers['X-Line-Signature']
@@ -41,12 +39,13 @@ def callback():
 def handle_message(event):
     with ApiClient(configuration) as api_client:
         linebot_api = MessagingApi(api_client)
+        reply_text = event.message.text  # ユーザーから送られたテキストを取得
         linebot_api.reply_message_with_http_info(
             ReplyMessageRequest(
-                reply_token = event.reply.token,
-                messages=[TextMessage(text=event.message.text)]
+                reply_token=event.reply_token,
+                messages=[TextMessage(text=reply_text)]  # 取得したテキストをそのまま返信
             )
         )
-        
+
 if __name__ == "__main__":
     app.run(port=8080)
