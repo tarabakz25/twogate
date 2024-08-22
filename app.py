@@ -22,7 +22,7 @@ import config
 
 app = Flask(__name__)
 
-configuration = Configuration(access_tokenj=config.CHANNEL_ACCESS_TOKEN)
+configuration = Configuration(access_token=config.CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(config.CHANNEL_SECRET)
 
 
@@ -49,4 +49,4 @@ def handle_message(event):
         )
         
 if __name__ == "__main__":
-    app.run()
+    app.run(port=8080)
