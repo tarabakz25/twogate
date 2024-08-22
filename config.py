@@ -3,5 +3,5 @@ CHANNEL_SECRET="3e4c5c791ac329fc3d264e53c0b80b12"
 
 # ngrokのhttpリンク ngrok http https://funky-intensely-stingray.ngrok-free.app 8080
 #
-#ここ
+#きずのぶらんち
 #
