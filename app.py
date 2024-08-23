@@ -55,22 +55,76 @@ def callback():
 def handle_message(event):
     with ApiClient(configuration) as api_client:
         
-        linebot_api = MessagingApi(api_client)
-        
-        responce = co.chat(
+        #キャンプ場を調べる
+        if event.message.text == "きゃんぷ場調べ":
+            send_message(event, "調べたい地域は？")
+            
+            # ユーザーの返答を待機
+            region = None
+            while region is None:
+                @handler.add(MessageEvent, message=TextMessageContent)
+                def handle_region(event):
+                    nonlocal region
+                    region = event.message.text
+            
+            send_message(event, "行きたい日にちは？")
+            
+            # 日付の入力を待機
+            date = None
+            while date is None:
+                @handler.add(MessageEvent, message=TextMessageContent)
+                def handle_date(event):
+                    nonlocal date
+                    date = event.message.text
+            
+            # ここで region と date を使用して次の処理を行う
+            responce = co.chat(
+                message=f"{region}の{date}に行きたいキャンプ場を調べてください。",
+                chat_history=[
+                    Message_Chatbot(message="調べた結果、以下の場所が見つかりました。"),
+                ],
+                connectors=[ChatConnector(id="web-search")],
+            )
+            
+            send_message(event, responce.text)
+            
+        #野営地を調べる
+        elif event.message.text == "野営地調べ":
+            send_message(event, "調べたい地域は？")
+            
+            region = None
+            while region is None:
+                @handler.add(MessageEvent, message=TextMessageContent)
+                def handle_region(event):
+                    nonlocal region
+                    region = event.message.text
+            
+            responce = co.chat(
+                message=f"{region}が野営できる場所か、{region}のホームページから調べてください。",
+                max_tokens=20,
+            )
+            
+            send_message(event, responce.text)
+            
+        else:
+            responce = co.chat(
             message=event.message.text,
             chat_history=[
                 Message_User(message="あなたはキャンプについて詳しい人です。キャンプについての質問のみ答えてください。それ以外の質問は回答を拒否してください。"),
-            ],
-            connectors=[ChatConnector(id="web-search")],
-        )
-        
-        reply_text = responce.text # ユーザーから送られたテキストを取得
-        linebot_api.reply_message_with_http_info(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=[TextMessage(text=reply_text)] 
+                ],
+                connectors=[ChatConnector(id="web-search")],
             )
+            
+            send_message(event, responce.text)
+        
+        
+def send_message(event, text):
+    with ApiClient(configuration) as api_client:
+        linebot_api = MessagingApi(api_client)
+
+        linebot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=text)
         )
         
 
