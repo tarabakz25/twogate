@@ -463,15 +463,30 @@ def send_daily_message():
     greeting = TextMessage(text="おはようございます！まるキャンです！\n今日のおすすめグッズの特集です。\n気になったものから見ていってください😊")
     
     user_ids = get_all_user_ids()
+    host_id = "U5215ed0cbefa4e44d23ed53e89de4a65"
     
     if not user_ids:
         print("ユーザーIDが見つかりません。")
         return
     
-    with ApiClient(configuration) as api_client:
-        line_bot_api = MessagingApi(api_client)
+    tf = False
+    
+    if tf:
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
         
-        for user_id in user_ids:
+            for user_id in user_ids:
+                try:
+                    push_message_request = PushMessageRequest(to=user_id, messages=[greeting, flex_message])
+                    line_bot_api.push_message(push_message_request)
+                    print(f"メッセージを送信しました: {user_id}")
+                except Exception as e:
+                    print(f"ユーザー {user_id} へのメッセージ送信に失敗しました: {str(e)}")
+    
+    else: #host mode
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            
             try:
                 push_message_request = PushMessageRequest(to=user_id, messages=[greeting, flex_message])
                 line_bot_api.push_message(push_message_request)
