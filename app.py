@@ -14,6 +14,7 @@ from cohere import ChatConnector
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import quote_plus
+from urllib.parse import urlparse, urljoin
 import subprocess
 import os
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -133,7 +134,7 @@ def handle_message(event):
         region = text
         user_state[user_id] = "awaiting_date_camp"
         user_state[user_id + "_region"] = region
-        send_message(event, "行きたい日にちを教えてください。？")
+        send_message(event, "行きたい日にちを教えてください。")
     elif user_state[user_id] == "awaiting_date_camp":
         date = text
         user_state[user_id] = "awaiting_conditions_camp"
@@ -245,7 +246,6 @@ def handle_camping_info(user_id, region, date, conditions):
             camp.update(additional_info)
             
             bubble = flex_template['contents'][i]
-            bubble['hero']['url'] = camp.get('image_url', 'https://example.com/default-camp-image.jpg')
             bubble['body']['contents'][0]['text'] = camp['name']
             bubble['body']['contents'][1]['contents'][0]['contents'][0]['text'] = 'キャンプ場'
             bubble['footer']['contents'][0]['contents'][0]['action']['uri'] = camp.get('homepage_url', f"https://www.google.com/search?q={quote_plus(camp['name'])}")
@@ -282,7 +282,8 @@ def handle_yaychi_info(user_id, prefecture, conditions):
                 "おすすめスポット: [スット]\n"
                 "特徴・注意点: [簡単な説明]\n"
                 "2. [次の市区町村名]\n"
-                "...(同様に3つ目まで)\n"
+                "...(同様に3つ目まで)\n",
+        max_tokens=50,
     )
     
     yaychi_info = parse_yaychi_response(res.text)
@@ -371,18 +372,29 @@ def handle_general_message(event, text):
     res = co.chat(
         message=event.message.text,
         chat_history=[
-            Message_User(message="あなたはキャンプの専門家です。キャンプや野営地の問に答えてください。それ以外の質問には回答しないようにしてください。")
+            Message_User(message="あなたは'まるキャン'というキャンプの専門家です。キャンプや野営地の問に答えてください。それ以外の質問には回答しないようにしてください。文末には時々!をつけて、明るいイメージで会話してください。")
         ],
-        max_tokens=30
+        max_tokens=60
     )
     send_message(event, res.text)
 
 def fetch_camp_items():
-    # ここでCohere APIを使ってキャンプグッズ情報を取得
+    items = []
     res = co.chat(
         message="キャンプグッズのおすすめアイテムを3つ教えてください。それぞれ商品名と50文字以内の説明を含めてください。"
     )
-    return parse_daily_info(res.text)
+    parsed_items = parse_daily_info(res.text)
+    
+    for item in parsed_items:
+        search_query = f"{item['name']} キャンプ用品"
+        url = get_first_search_result(search_query)
+        items.append({
+            'name': item['name'],
+            'description': item['description'],
+            'url': url
+        })
+    
+    return items
 
 def parse_daily_info(response_text):
     items = []
@@ -393,6 +405,20 @@ def parse_daily_info(response_text):
             items.append({'name': name.strip(), 'description': description.strip()})
     return items[:3]  # 最大3つのアイテムを返す
 
+def get_first_search_result(query):
+    search_url = f"https://www.google.com/search?q={requests.utils.quote(query)}"
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.get(search_url, headers=headers)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    
+    first_result = soup.find('div', class_='yuRUbf')
+    if first_result:
+        url = first_result.find('a')['href']
+        parsed_url = urlparse(url)
+        if parsed_url.scheme and parsed_url.netloc:
+            return url
+    return "https://www.google.com/search?q=" + requests.utils.quote(query)  # デフォルトのURLを返す
+
 def create_daily_flex_message(items):
     with open("flex_message_daily.json", "r", encoding='utf-8') as file:
         flex_template = json.load(file)
@@ -402,12 +428,37 @@ def create_daily_flex_message(items):
             bubble = flex_template['contents'][i]
             bubble['body']['contents'][0]['text'] = item['name']
             bubble['body']['contents'][1]['contents'][0]['contents'][1]['text'] = item['description']
+            
+            # URLの検証と修正
+            url = item['url']
+            parsed_url = urlparse(url)
+            if not parsed_url.scheme:
+                url = urljoin("https://", url)
+            bubble['footer']['contents'][0]['action']['uri'] = url
 
     flex_container = FlexContainer.from_dict(flex_template)
     return FlexMessage(alt_text="本日のキャンプ情報", contents=flex_container)
 
+def fetch_camp_items():
+    items = []
+    res = co.chat(
+        message="キャンプグッズのおすすめアイテムを3つ教えてください。それぞれ商品名と50文字以内の説明を含めてください。"
+    )
+    parsed_items = parse_daily_info(res.text)
+    
+    for item in parsed_items:
+        search_query = f"{item['name']} キャンプ用品"
+        url = get_first_search_result(search_query)
+        items.append({
+            'name': item['name'],
+            'description': item['description'],
+            'url': url
+        })
+    
+    return items
+
 def send_daily_message():
-    items = fetch_camp_items()  # アイテムを取得
+    items = fetch_camp_items()  # アイテムを取得（URLを含む）
     flex_message = create_daily_flex_message(items)
     greeting = TextMessage(text="おはようございます！まるキャンです！\n今日のおすすめグッズの特集です。\n気になったものから見ていってください😊")
     

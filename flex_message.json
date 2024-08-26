@@ -4,13 +4,6 @@
       {
         "type": "bubble",
         "size": "micro",
-        "hero": {
-          "type": "image",
-          "url": "https://lh5.googleusercontent.com/p/AF1QipN2pG-nGrccNejtOu7Je42OoOJFCQxBVbtV_ttA=w408-h306-k-no",
-          "size": "full",
-          "aspectMode": "cover",
-          "aspectRatio": "320:213"
-        },
         "body": {
           "type": "box",
           "layout": "vertical",
@@ -84,13 +77,6 @@
       {
         "type": "bubble",
         "size": "micro",
-        "hero": {
-          "type": "image",
-          "url": "https://lh5.googleusercontent.com/p/AF1QipP-4Th3dsPL-V2U3msfwB5HBEo5rPvhpokP_U4P=w408-h305-k-no",
-          "size": "full",
-          "aspectMode": "cover",
-          "aspectRatio": "320:213"
-        },
         "body": {
           "type": "box",
           "layout": "vertical",
@@ -157,13 +143,6 @@
       {
         "type": "bubble",
         "size": "micro",
-        "hero": {
-          "type": "image",
-          "url": "https://lh5.googleusercontent.com/p/AF1QipPeYPGSQartJXdmChCP4DzZ1wbyOlu6L9g66rwd=w426-h240-k-no",
-          "size": "full",
-          "aspectMode": "cover",
-          "aspectRatio": "320:213"
-        },
         "body": {
           "type": "box",
           "layout": "vertical",
